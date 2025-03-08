@@ -1,71 +1,194 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Church Members List</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid black; padding: 8px; text-align: left; }
-        th { background-color: #f4f4f4; }
-        input, button { padding: 10px; margin: 5px; }
-    </style>
-</head>
-<body>
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>ANOVA Data Analysis</title>  
+    <style>  
+        table { border-collapse: collapse; margin-top: 10px; width: 100%; }  
+        th, td { border: 1px solid black; padding: 5px; text-align: center; }  
+        input, select { width: 80px; text-align: center; }  
+        .scrollable { height: 400px; overflow: auto; display: block; }  
+        .total-row { font-weight: bold; background-color: #f2f2f2; }  
+        .overall-total { font-weight: bold; background-color: #ccc; }  
+    </style>  
+</head>  
+<body>  
+    <h2> </h2>  
+    <p>Enter values into the table below:</p>  <div class="scrollable">  
+    <table id="dataTable">  
+        <thead>  
+            <tr>  
+                <th>Respondent</th>  
+                <th>Section</th>  
+                <th>Gender</th>  
+                <th>Age</th>  
+                <th>strongly agree</th>  
+                <th>agree</th>  
+                <th>undecided</th>  
+                <th>disagree</th>  
+                <th>strongly disagree</th>  
+            </tr>  
+        </thead>  
+        <tbody></tbody>  
+        <tfoot>  
+            <!-- Section & Gender Totals -->  
+            <tr class="total-row">  
+                <td><strong>Total</strong></td>  
+                <td><strong>Sections Used:</strong> <span id="total-sections">0</span></td>  
+                <td>  
+                    <strong>Male:</strong> <span id="total-male">0</span> <br>  
+                    <strong>Female:</strong> <span id="total-female">0</span>  
+                </td>  
+                <td><strong>Average Age:</strong> <span id="average-age">0</span></td>  
+                <td id="total-col-0">0</td>  
+                <td id="total-col-1">0</td>  
+                <td id="total-col-2">0</td>  
+                <td id="total-col-3">0</td>  
+                <td id="total-col-4">0</td>  
+            </tr>  
 
-    <h2>United Door of Faith Church - Members List</h2>
+            <!-- Section Totals -->  
+            <tr class="total-row">  
+                <td colspan="9">  
+                    <strong>Respondents Per Section:</strong> <br>  
+                    <span id="section-totals"></span>  
+                </td>  
+            </tr>
 
-    <table>
-        <thead>
-            
-        </thead>
-        <tbody id="members-list"></tbody>
-    </table>
+<!-- Section-wise Column Totals -->  <tr class="total-row">  
+    <td colspan="9">  
+        <strong>Column Totals Per Section:</strong> <br>  
+        <pre id="section-column-totals"></pre>  
+    </td>  
+</tr>  
+                <!-- Overall Total -->  
+                <tr class="overall-total">  
+                    <td colspan="4"><strong>Overall Total:</strong></td>  
+                    <td id="overall-total">0</td>  
+                </tr>  
+            </tfoot>  
+        </table>  
+    </div>  <script>  
+    const rows = 234;  
+    const cols = 5;  
+    const sections = ["Kamagong", "Molave", "Narra", "Talisay", "Dao", "Ardisia", "Lawan", "Almaciga", "Section I", "Gmelina"];  
 
-    <h3>Add New Member</h3>
-    <input type="text" id="name" placeholder="Name">
-    <input type="number" id="age" placeholder="Age">
-    <input type="text" id="contact" placeholder="Contact">
-    <input type="text" id="address" placeholder="Address">
-    <button onclick="addMember()">Add Member</button>
+    function generateTable() {  
+        let table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];  
+        for (let i = 0; i < rows; i++) {  
+            let row = table.insertRow();  
+            let respondentCell = row.insertCell();  
+            respondentCell.innerText = `Respondent ${i + 1}`;  
 
-    <script>
-        async function fetchMembers() {
-            const response = await fetch('/members');
-            const members = await response.json();
-            const tableBody = document.getElementById('members-list');
-            tableBody.innerHTML = '';
+            // Section dropdown  
+            let sectionCell = row.insertCell();  
+            let sectionSelect = document.createElement("select");  
+            sectionSelect.id = `section-${i}`;  
+            sectionSelect.innerHTML = `<option value="">Select</option>` +   
+                sections.map(sec => `<option value="${sec}">${sec}</option>`).join("");  
+            sectionSelect.onchange = updateSectionTotals;  
+            sectionCell.appendChild(sectionSelect);  
 
-            members.forEach(member => {
-                tableBody.innerHTML += `
-                    <tr>
-                        <td>${member.id}</td>
-                        <td>${member.name}</td>
-                        <td>${member.age}</td>
-                        <td>${member.contact}</td>
-                        <td>${member.address}</td>
-                    </tr>`;
-            });
-        }
+            // Gender dropdown  
+            let genderCell = row.insertCell();  
+            let genderSelect = document.createElement("select");  
+            genderSelect.id = `gender-${i}`;  
+            genderSelect.innerHTML = `  
+                <option value="">Select</option>  
+                <option value="Male">Male</option>  
+                <option value="Female">Female</option>  
+            `;  
+            genderSelect.onchange = updateGenderTotals;  
+            genderCell.appendChild(genderSelect);  
 
-        async function addMember() {
-            const name = document.getElementById('name').value;
-            const age = document.getElementById('age').value;
-            const contact = document.getElementById('contact').value;
-            const address = document.getElementById('address').value;
+            // Age input  
+            let ageCell = row.insertCell();  
+            let ageInput = document.createElement("input");  
+            ageInput.type = "number";  
+            ageInput.id = `age-${i}`;  
+            ageInput.oninput = updateAgeStats;  
+            ageCell.appendChild(ageInput);  
 
-            await fetch('/add_member', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, age, contact, address })
-            });
+            // Data inputs  
+            for (let j = 0; j < cols; j++) {  
+                let cell = row.insertCell();  
+                let input = document.createElement("input");  
+                input.type = "number";  
+                input.id = `cell-${i}-${j}`;  
+                input.oninput = updateTotals;  
+                cell.appendChild(input);  
+            }  
+        }  
+    }  
 
-            fetchMembers();
-        }
+    function updateTotals() {  
+        let overallTotal = 0;  
 
-        fetchMembers();
-    </script>
+        for (let j = 0; j < cols; j++) {  
+            let sum = 0;  
+            for (let i = 0; i < rows; i++) {  
+                let value = document.getElementById(`cell-${i}-${j}`).value;  
+                sum += Number(value) || 0;  
+            }  
+            document.getElementById(`total-col-${j}`).innerText = sum;  
+            overallTotal += sum;  
+        }  
 
-</body>
-</html>
+        document.getElementById('overall-total').innerText = overallTotal;  
+    }  
+
+    function updateGenderTotals() {  
+        let maleCount = 0;  
+        let femaleCount = 0;  
+
+        for (let i = 0; i < rows; i++) {  
+            let gender = document.getElementById(`gender-${i}`).value;  
+            if (gender === "Male") maleCount++;  
+            if (gender === "Female") femaleCount++;  
+        }  
+
+        document.getElementById('total-male').innerText = maleCount;  
+        document.getElementById('total-female').innerText = femaleCount;  
+    }  
+
+    function updateAgeStats() {  
+        let totalAge = 0;  
+        let count = 0;  
+
+        for (let i = 0; i < rows; i++) {  
+            let age = document.getElementById(`age-${i}`).value;  
+            if (age) {  
+                totalAge += Number(age);  
+                count++;  
+            }  
+        }  
+
+        let avgAge = count > 0 ? (totalAge / count).toFixed(2) : 0;  
+        document.getElementById('average-age').innerText = avgAge;  
+    }  
+
+    function updateSectionTotals() {  
+        let sectionCounts = {};  
+        sections.forEach(sec => sectionCounts[sec] = 0);  
+
+        for (let i = 0; i < rows; i++) {  
+            let section = document.getElementById(`section-${i}`).value;  
+            if (section) sectionCounts[section]++;  
+        }  
+
+        let sectionText = Object.entries(sectionCounts)  
+            .filter(([_, count]) => count > 0)  
+            .map(([sec, count]) => `${sec}: ${count}`)  
+            .join(", ");  
+
+        document.getElementById('section-totals').innerText = sectionText;  
+        document.getElementById('total-sections').innerText = Object.values(sectionCounts).filter(c => c > 0).length;  
+    }  
+
+    // Generate table on page load  
+    window.onload = generateTable;  
+</script>
+
+</body>  
+</html> 
+
